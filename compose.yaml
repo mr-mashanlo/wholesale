@@ -1,21 +1,39 @@
 services:
 
   db:
-    image: mongo
-    container_name: mongodb
+    image: postgres:15
+    container_name: postgres
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "5432:5432"
+    networks:
+      - postgres-network
     volumes:
-      - mongodb:/data/db
+      - postgres:/var/lib/postgresql
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  studio:
+    image: node:26-alpine
+    container_name: studio
+    working_dir: /usr/src/app
+    command: npx prisma studio --port 5555 --browser none
+    volumes:
+      - ./server:/usr/src/app
+    ports:
+      - "5555:5555"
+    networks:
+      - postgres-network
+    depends_on:
+      db:
+        condition: service_healthy
 
   server:
     container_name: node
@@ -24,7 +42,9 @@ services:
       context: ./server
       dockerfile: dockerfile
     ports:
-      - "4173:4173"
+      - "9173:9173"
+    networks:
+      - postgres-network
     volumes:
       - ./server:/usr/src/app
       - /usr/src/app/node_modules
@@ -32,17 +52,8 @@ services:
       db:
         condition: service_healthy
 
-  client:
-    container_name: react
-    restart: unless-stopped
-    build:
-      context: ./client
-      dockerfile: dockerfile
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./client:/usr/src/app
-      - /usr/src/app/node_modules
+networks:
+  postgres-network:
 
 volumes:
-  mongodb:
+  postgres:

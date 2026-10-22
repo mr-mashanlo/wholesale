@@ -1,21 +1,24 @@
 services:
 
   db:
-    image: mongo
-    container_name: mongodb
+    image: postgres:15
+    container_name: postgres
     restart: always
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks:
+      - postgres-network
     volumes:
-      - mongodb:/data/db
+      - postgres:/var/lib/postgresql
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - mongodb-network
 
   server:
     container_name: node
@@ -23,25 +26,16 @@ services:
     build:
       context: ./server
       dockerfile: dockerfile.production
+    ports:
+      - "9173:9173"
     networks:
-      - mongodb-network
+      - postgres-network
     depends_on:
       db:
         condition: service_healthy
 
-  client:
-    container_name: react
-    restart: always
-    build:
-      context: ./client
-      dockerfile: dockerfile.production
-    ports:
-      - "8080:80"
-    networks:
-      - mongodb-network
-
 networks:
-  mongodb-network:
+  postgres-network:
 
 volumes:
-  mongodb:
+  postgres:

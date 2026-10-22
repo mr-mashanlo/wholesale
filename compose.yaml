@@ -1,0 +1,48 @@
+services:
+
+  db:
+    image: mongo
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    container_name: node
+    restart: unless-stopped
+    build:
+      context: ./server
+      dockerfile: dockerfile
+    ports:
+      - "4173:4173"
+    volumes:
+      - ./server:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+  client:
+    container_name: react
+    restart: unless-stopped
+    build:
+      context: ./client
+      dockerfile: dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/usr/src/app
+      - /usr/src/app/node_modules
+
+volumes:
+  mongodb:

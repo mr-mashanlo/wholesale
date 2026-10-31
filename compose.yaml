@@ -9,31 +9,16 @@ services:
     networks:
       - postgres-network
     volumes:
-      - postgres:/var/lib/postgresql
+      - postgres:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d postgres" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}" ]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  studio:
-    image: node:26-alpine
-    container_name: studio
-    working_dir: /usr/src/app
-    command: npx prisma studio --port 5555 --browser none
-    volumes:
-      - ./server:/usr/src/app
-    ports:
-      - "5555:5555"
-    networks:
-      - postgres-network
-    depends_on:
-      db:
-        condition: service_healthy
 
   server:
     container_name: node

@@ -1,0 +1,113 @@
+// use prisma-8
+
+enum Role {
+  ADMIN
+  MODERATOR
+  CUSTOMER
+  SUPPLIER
+}
+
+enum OrderStatus {
+  PENDING
+  DELIVERING
+  CANCELLED
+  COMPLETED
+}
+
+enum OperationStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum OperationType {
+  INBOUND
+  OUTBOUND
+  RETURN
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+type Dimensions {
+  length Int
+  width Int
+  height Int
+}
+
+type Box {
+  units Int
+  weight Int
+  dimensions Dimensions
+}
+
+model Auth {
+  id Uuid @id @onCreate(uuid())
+  email String @unique
+  password String
+  refreshToken String?
+  expiredAt DateTime @default(now())
+  user User?
+  @@index([refreshToken])
+}
+
+model User {
+  id Uuid @id @onCreate(uuid())
+  name String
+  role Role @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  archived Boolean @default(false)
+  auth Auth @relation(fields: [authId], references: [id])
+  authId Uuid @unique
+  @@index([authId])
+}
+
+model Product {
+  id Uuid @id @onCreate(uuid())
+  name String @unique
+  sku String @unique
+  weight Int?
+  dimensions Dimensions?
+  box Box?
+  createdAt DateTime @default(now())
+  archived Boolean @default(false)
+}
+
+model Order {
+  id Uuid @id @onCreate(uuid())
+  status OrderStatus @default(PENDING)
+  createdAt DateTime @default(now())
+}
+
+model OrderItem {
+  id Uuid @id @onCreate(uuid())
+  price Int
+  amount Int
+  product Product @relation(fields: [productId], references: [id])
+  productId Uuid
+  order Order @relation(fields: [orderId], references: [id])
+  orderId Uuid
+  @@index([orderId])
+}
+
+model Operation {
+  id Uuid @id @onCreate(uuid())
+  type OperationType
+  status OperationStatus @default(COMPLETED)
+  createdAt DateTime @default(now())
+  order Order? @relation(fields: [orderId], references: [id])
+  orderId Uuid?
+}
+
+model Transaction {
+  id Uuid @id @onCreate(uuid())
+  type TransactionType
+  amount Int
+  createdAt DateTime @default(now())
+  operation Operation @relation(fields: [operationId], references: [id])
+  operationId Uuid
+  product Product @relation(fields: [productId], references: [id])
+  productId Uuid
+  @@index([operationId])
+}

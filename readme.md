@@ -9,14 +9,11 @@ cp .env.local .env
 docker compose up -d
 docker compose -f compose.production.yaml up -d
 
-# Add migration
-docker exec -it node npx prisma migrate dev --name init
+# #####
+docker exec -it node npx prisma contract emit
 
-# Apply migration
-docker exec -it node npx prisma db push
-
-# Deploy migration
-docker exec -it node npx prisma migrate deploy
+# #####
+docker exec -it node npx prisma db init
 
 # Stop docker
 docker compose down -v

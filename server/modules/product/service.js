@@ -1,7 +1,3 @@
-import slug from 'slug';
-
-import { FilteringSchema, PaginationSchema, SortingSchema } from './schema.js';
-
 export class ProductService {
 
   constructor( productRepository ) {
@@ -9,17 +5,14 @@ export class ProductService {
   };
 
   createProduct = async body => {
-    return await this.productRepository.create( { ...body, sku: slug( body.name ) } );
+    return await this.productRepository.create( body );
   };
 
   deleteProduct = async query => {
     return await this.productRepository.delete( query );
   };
 
-  getProducts = async query => {
-    const filter = FilteringSchema.parse( query );
-    const sort = SortingSchema.parse( query );
-    const pagination = PaginationSchema.parse( query );
+  getProducts = async ( { filter, sort, pagination } ) => {
     const data = await this.productRepository.find( { filter, sort, pagination } );
     const total = await this.productRepository.count( filter );
     return { data, ...total, ...pagination };
@@ -30,7 +23,7 @@ export class ProductService {
   };
 
   updateProduct = async ( query, body ) => {
-    return await this.productRepository.update( query, { ...body, sku: slug( body.name ) } );
+    return await this.productRepository.update( query, body );
   };
 
 };

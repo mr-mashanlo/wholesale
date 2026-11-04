@@ -3,10 +3,9 @@ import { Unauthorized } from '../../errors/unauthorized.js';
 
 export class AuthService {
 
-  constructor( db, authRepository, userRepository, tokenService, passwordService ) {
-    this.db = db;
+  constructor( authRepository, authUnitOfWork, tokenService, passwordService ) {
     this.authRepository = authRepository;
-    this.userRepository = userRepository;
+    this.authUnitOfWork = authUnitOfWork;
     this.tokenService = tokenService;
     this.passwordService = passwordService;
   };
@@ -19,47 +18,48 @@ export class AuthService {
   };
 
   async signIn( { email, password } ) {
-    return await this.db.transaction( async tx => {
-      const auth = await this.authRepository.findOne( { email }, tx );
+    return await this.authUnitOfWork.transaction( async repository => {
+      const auth = await repository.auth.findOne( { email } );
       if ( !auth ) throw new BadRequest( [ { name: 'email', message: 'Email is not exist' } ] );
 
       const isValid = this.passwordService.compare( password, auth.password );
       if ( !isValid ) throw new BadRequest( [ { name: 'password', message: 'Incorrect password' } ] );
 
-      const user = await this.userRepository.findOne( { authId: auth.id }, tx );
+      const user = await repository.user.findOne( { authId: auth.id } );
       const { accessToken, refreshToken, hashedRefreshToken } = this.generateTokens( { id: auth.id, email: auth.email, role: user.role, userId: user.id } );
-      await this.authRepository.update( { id: auth.id }, { refreshToken: hashedRefreshToken, expiredAt: Temporal.Now.instant().add( { hours: Number( process.env.JWT_REFRESH_TIME ) } ) }, tx );
+      await repository.auth.update( { id: auth.id }, { refreshToken: hashedRefreshToken, expiredAt: Temporal.Now.instant().add( { hours: Number( process.env.JWT_REFRESH_TIME ) } ) } );
 
       return { id: auth.id, email: auth.email, role: user.role, userId: user.id, accessToken, refreshToken };
     } );
   };
 
   async signUp( { name, email, password } ) {
-    return await this.db.transaction( async tx => {
-      const candidate = await this.authRepository.findOne( { email }, tx );
+    return await this.authUnitOfWork.transaction( async repository => {
+      const candidate = await repository.auth.findOne( { email } );
       if ( candidate ) throw new BadRequest( [ { name: 'email', message: 'Email is already exist' } ] );
 
       const hash = this.passwordService.hash( password );
-      const auth = await this.authRepository.create( { email, password: hash }, tx );
-      const user = await this.userRepository.create( { authId: auth.id, name }, tx );
+      const auth = await repository.auth.create( { email, password: hash } );
+      const user = await repository.user.create( { authId: auth.id, name } );
 
       const { accessToken, refreshToken, hashedRefreshToken } = this.generateTokens( { id: auth.id, email: auth.email, role: user.role, userId: user.id } );
-      await this.authRepository.update( { id: auth.id }, { refreshToken: hashedRefreshToken, expiredAt: Temporal.Now.instant().add( { hours: Number( process.env.JWT_REFRESH_TIME ) } ) }, tx );
+      await repository.auth.update( { id: auth.id }, { refreshToken: hashedRefreshToken, expiredAt: Temporal.Now.instant().add( { hours: Number( process.env.JWT_REFRESH_TIME ) } ) } );
 
       return { id: auth.id, email: auth.email, role: user.role, userId: user.id, accessToken, refreshToken };
     } );
   };
 
   async refreshToken( refreshToken ) {
-    return await this.db.transaction( async tx => {
+    return await this.authUnitOfWork.transaction( async repository => {
       const hashedRefreshToken = this.tokenService.hashRefreshToken( refreshToken );
-      const auth = await this.authRepository.findOne( { refreshToken: hashedRefreshToken }, tx );
+      const auth = await repository.auth.findOne( { refreshToken: hashedRefreshToken } );
 
       if ( !auth ) throw new Unauthorized( [ { name: 'token', message: 'Invalid or reused token' } ] );
       if ( Temporal.Instant.compare( Temporal.Now.instant(), auth.expiredAt ) > 0 ) throw new Unauthorized( [ { name: 'token', message: 'Token has expired' } ] );
 
-      const { accessToken: newAccessToken, refreshToken: newRefreshToken, hashedRefreshToken: newHashedRefreshToken } = this.generateTokens( { id: auth._id, nickname: auth.nickname }, tx );
-      const updatedUser = await this.authRepository.update( { id: auth.id, refreshToken: hashedRefreshToken }, { refreshToken: newHashedRefreshToken, expiredAt: Temporal.Now.instant().add( { hours: Number( process.env.JWT_REFRESH_TIME ) } ) }, tx );
+      const user = await repository.user.findOne( { authId: auth.id } );
+      const { accessToken: newAccessToken, refreshToken: newRefreshToken, hashedRefreshToken: newHashedRefreshToken } = this.generateTokens( { id: auth.id, email: auth.email, role: user.role, userId: user.id } );
+      const updatedUser = await repository.auth.update( { id: auth.id, refreshToken: hashedRefreshToken }, { refreshToken: newHashedRefreshToken, expiredAt: Temporal.Now.instant().add( { hours: Number( process.env.JWT_REFRESH_TIME ) } ) } );
 
       if ( !updatedUser ) throw new Unauthorized( [ { message: 'Token already rotated' } ] );
       return { id: auth.id, email: auth.email, accessToken: newAccessToken, refreshToken: newRefreshToken };

@@ -15,7 +15,7 @@ export class OperationRepository {
   };
 
   async find( { filter, sort, pagination } = {}, tx = this.#db ) {
-    return await tx.orm.public.Operation.where( filter ).orderBy( sort ).limit( pagination.limit ).offset( pagination.skip ).all();
+    return await tx.orm.public.Operation.where( filter ).orderBy( p => p[sort.sort][sort.order]() ).limit( pagination.limit ).offset( pagination.skip ).all();
   };
 
   async findOne( where = {}, tx = this.#db ) {

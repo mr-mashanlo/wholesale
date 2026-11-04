@@ -11,11 +11,11 @@ export class TransactionRepository {
   };
 
   async create( data, tx = this.#db ) {
-    return await tx.orm.public.Transaction.create( data );
+    return await tx.orm.public.Transaction.createAll( data );
   };
 
   async find( { filter, sort, pagination } = {}, tx = this.#db ) {
-    return await tx.orm.public.Transaction.where( filter ).orderBy( sort ).limit( pagination.limit ).offset( pagination.skip ).all();
+    return await tx.orm.public.Transaction.where( filter ).orderBy( p => p[sort.sort][sort.order]() ).limit( pagination.limit ).offset( pagination.skip ).all();
   };
 
   async findOne( where = {}, tx = this.#db ) {

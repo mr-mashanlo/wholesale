@@ -6,7 +6,7 @@ export class OrderController {
 
   createOrder = async ( req, res, next ) => {
     try {
-      const order = await this.orderService.createOrder( { ...req.body, user: req.user.id } );
+      const order = await this.orderService.createOrder( { ...req.body, userId: req.user.userId } );
       res.json( order );
     } catch ( error ) {
       next( error );
@@ -15,7 +15,8 @@ export class OrderController {
 
   getOrders = async ( req, res, next ) => {
     try {
-      const orders = await this.orderService.getOrders( req.query );
+      const { order, sort, limit, page, ...filter } = res.locals.query;
+      const orders = await this.orderService.getOrders( { filter: { ...filter, userId: req.user.userId }, sort: { order, sort }, pagination: { limit, page, skip: ( page - 1 ) * limit } } );
       res.json( orders );
     } catch ( error ) {
       next( error );
@@ -24,7 +25,7 @@ export class OrderController {
 
   getOrder = async ( req, res, next ) => {
     try {
-      const order = await this.orderService.getOrder( req.params.id );
+      const order = await this.orderService.getOrder( req.params );
       res.json( order );
     } catch ( error ) {
       next( error );
@@ -33,7 +34,7 @@ export class OrderController {
 
   updateOrder = async ( req, res, next ) => {
     try {
-      const order = await this.orderService.updateOrder( req.params.id, req.body );
+      const order = await this.orderService.updateOrder( req.params, req.body );
       res.json( order );
     } catch ( error ) {
       next( error );

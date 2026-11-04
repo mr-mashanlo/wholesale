@@ -15,7 +15,8 @@ export class OperationController {
 
   getOperations = async ( req, res, next ) => {
     try {
-      const operations = await this.operationService.getOperations( req.query );
+      const { order, sort, limit, page, ...filter } = res.locals.query;
+      const operations = await this.operationService.getOperations( { filter, sort: { order, sort }, pagination: { limit, page, skip: ( page - 1 ) * limit } } );
       res.json( operations );
     } catch ( error ) {
       next( error );

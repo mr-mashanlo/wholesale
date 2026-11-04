@@ -1,5 +1,3 @@
-import { FilteringSchema, PaginationSchema, SortingSchema } from './schema.js';
-
 export class UserService {
 
   constructor( userRepository ) {
@@ -10,10 +8,7 @@ export class UserService {
     return await this.userRepository.create( body );
   };
 
-  getUsers = async query => {
-    const filter = FilteringSchema.parse( query );
-    const sort = SortingSchema.parse( query );
-    const pagination = PaginationSchema.parse( query );
+  getUsers = async ( { filter, sort, pagination } ) => {
     const data = await this.userRepository.find( { filter, sort, pagination } );
     const total = await this.userRepository.count( filter );
     return { data, ...total, ...pagination };

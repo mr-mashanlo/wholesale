@@ -1,19 +1,20 @@
-import { FilteringSchema, PaginationSchema, SortingSchema } from './schema.js';
-
 export class OperationService {
 
-  constructor( operationRepository ) {
+  constructor( operationRepository, operationUnitToWork ) {
     this.operationRepository = operationRepository;
+    this.operationUnitToWork = operationUnitToWork;
   };
 
-  createOperation = async body => {
-    return await this.operationRepository.create( body );
+  createOperation = async ( { type, status, products } ) => {
+    return await this.operationUnitToWork.transaction( async repository => {
+      const operation = await repository.operation.create( { type, status } );
+      const transactionEntities = products.reduce( ( acc, item ) => [ ...acc, { ...item, operationId: operation.id, amount: type === 'INBOUND' || type === 'RETURN' ? +item.amount : -item.amount } ], [] );
+      await repository.transaction.create( transactionEntities );
+      return operation;
+    } );
   };
 
-  getOperations = async query => {
-    const filter = FilteringSchema.parse( query );
-    const sort = SortingSchema.parse( query );
-    const pagination = PaginationSchema.parse( query );
+  getOperations = async ( { filter, sort, pagination } ) => {
     const data = await this.operationRepository.find( { filter, sort, pagination } );
     const total = await this.operationRepository.count( filter );
     return { data, ...total, ...pagination };

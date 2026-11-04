@@ -1,19 +1,20 @@
-import { FilteringSchema, PaginationSchema, SortingSchema } from './schema.js';
-
 export class OrderService {
 
-  constructor( orderRepository ) {
+  constructor( orderRepository, orderUnitOfWork ) {
     this.orderRepository = orderRepository;
+    this.orderUnitOfWork = orderUnitOfWork;
   };
 
-  createOrder = async body => {
-    return await this.orderRepository.create( body );
+  createOrder = async ( { address, products, userId } ) => {
+    return await this.orderUnitOfWork.transaction( async repository => {
+      const order = await repository.order.create( { address, userId } );
+      const productEntities = products.reduce( ( acc, item ) => [ ...acc, { ...item, orderId: order.id } ], [] );
+      await repository.orderItem.create( productEntities );
+      return order;
+    } );
   };
 
-  getOrders = async query => {
-    const filter = FilteringSchema.parse( query );
-    const sort = SortingSchema.parse( query );
-    const pagination = PaginationSchema.parse( query );
+  getOrders = async ( { filter, sort, pagination } ) => {
     const data = await this.orderRepository.find( { filter, sort, pagination } );
     const total = await this.orderRepository.count( filter );
     return { data, ...total, ...pagination };

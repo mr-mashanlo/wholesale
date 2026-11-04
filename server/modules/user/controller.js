@@ -15,7 +15,8 @@ export class UserController {
 
   getUsers = async ( req, res, next ) => {
     try {
-      const users = await this.userService.getUsers( req.query );
+      const { order, sort, limit, page, ...filter } = res.locals.query;
+      const users = await this.userService.getUsers( { filter, sort: { order, sort }, pagination: { limit, page, skip: ( page - 1 ) * limit } } );
       res.json( users );
     } catch ( error ) {
       next( error );

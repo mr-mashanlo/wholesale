@@ -34,6 +34,19 @@ services:
       db:
         condition: service_healthy
 
+  client:
+    container_name: react
+    restart: always
+    build:
+      context: ./client
+      dockerfile: dockerfile.production
+    networks:
+      - postgres-network
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+
 networks:
   postgres-network:
 

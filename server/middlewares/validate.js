@@ -1,9 +1,28 @@
 import { BadRequest } from '../errors/bad-request.js';
 
-export const validate = schema => ( req, res, next ) => {
+export const validateBody = schema => ( req, res, next ) => {
   try {
-    const validatedBody = schema.parse( req.body );
-    req.body = validatedBody;
+    req.body = schema.parse( req.body );
+    next();
+  } catch ( error ) {
+    const errorObject = JSON.parse( error )[0];
+    next( new BadRequest( [ { name: errorObject.path[0], message: errorObject.message } ] ) );
+  }
+};
+
+export const validateQuery = schema => ( req, res, next ) => {
+  try {
+    res.locals.query = schema.parse( req.query );
+    next();
+  } catch ( error ) {
+    const errorObject = JSON.parse( error )[0];
+    next( new BadRequest( [ { name: errorObject.path[0], message: errorObject.message } ] ) );
+  }
+};
+
+export const validateParams = schema => ( req, res, next ) => {
+  try {
+    res.locals.params = schema.parse( req.params );
     next();
   } catch ( error ) {
     const errorObject = JSON.parse( error )[0];

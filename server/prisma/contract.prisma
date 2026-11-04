@@ -7,41 +7,6 @@ enum Role {
   SUPPLIER
 }
 
-enum OrderStatus {
-  PENDING
-  DELIVERING
-  CANCELLED
-  COMPLETED
-}
-
-enum OperationStatus {
-  COMPLETED
-  CANCELLED
-}
-
-enum OperationType {
-  INBOUND
-  OUTBOUND
-  RETURN
-}
-
-enum TransactionType {
-  CREDIT
-  DEBIT
-}
-
-type Dimensions {
-  length Int
-  width Int
-  height Int
-}
-
-type Box {
-  units Int
-  weight Int
-  dimensions Dimensions
-}
-
 model Auth {
   id Uuid @id @onCreate(uuid())
   email String @unique
@@ -63,21 +28,65 @@ model User {
   @@index([authId])
 }
 
+model Address {
+  id Uuid @id @onCreate(uuid())
+  state String
+  city String
+  address String
+  active Boolean @default(false)
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id])
+  userId Uuid
+  @@index([userId])
+}
+
+type Dimensions {
+  length Int
+  width Int
+  height Int
+}
+
+model Carton {
+  id Uuid @id @onCreate(uuid())
+  units Int
+  weight Int
+  dimensions Dimensions
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Uuid @unique
+}
+
 model Product {
   id Uuid @id @onCreate(uuid())
   name String @unique
-  sku String @unique
+  slug String @unique
+  sku String? @unique
   weight Int?
   dimensions Dimensions?
-  box Box?
+  сarton Carton?
   createdAt DateTime @default(now())
   archived Boolean @default(false)
+}
+
+enum OrderStatus {
+  PENDING
+  DELIVERING
+  CANCELLED
+  COMPLETED
+}
+
+type OrderAddress {
+  state String
+  city String
+  address String
 }
 
 model Order {
   id Uuid @id @onCreate(uuid())
   status OrderStatus @default(PENDING)
   createdAt DateTime @default(now())
+  address OrderAddress
+  user User? @relation(fields: [userId], references: [id])
+  userId Uuid?
 }
 
 model OrderItem {
@@ -91,6 +100,18 @@ model OrderItem {
   @@index([orderId])
 }
 
+enum OperationType {
+  INBOUND
+  RETURN
+  OUTBOUND
+  ADJUSTMENT
+}
+
+enum OperationStatus {
+  COMPLETED
+  CANCELLED
+}
+
 model Operation {
   id Uuid @id @onCreate(uuid())
   type OperationType
@@ -102,7 +123,6 @@ model Operation {
 
 model Transaction {
   id Uuid @id @onCreate(uuid())
-  type TransactionType
   amount Int
   createdAt DateTime @default(now())
   operation Operation @relation(fields: [operationId], references: [id])

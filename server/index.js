@@ -7,7 +7,9 @@ import { rateLimit } from 'express-rate-limit';
 import { slowDown } from 'express-slow-down';
 
 import { errorHandler } from './middlewares/error-handler.js';
+import { addressRouter } from './modules/address/router.js';
 import { authRouter } from './modules/auth/router.js';
+import { cartonRouter } from './modules/carton/router.js';
 import { operationRouter } from './modules/operation/router.js';
 import { orderRouter } from './modules/order/router.js';
 import { productRouter } from './modules/product/router.js';
@@ -37,6 +39,8 @@ app.use( speedLimiter );
 
 app.use( '/api/auth', authRouter );
 app.use ( '/api/users', userRouter );
+app.use ( '/api/addresses', addressRouter );
+app.use ( '/api/cartons', cartonRouter );
 app.use ( '/api/products', productRouter );
 app.use ( '/api/orders', orderRouter );
 app.use ( '/api/operations', operationRouter );

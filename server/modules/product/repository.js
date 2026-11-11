@@ -6,28 +6,28 @@ export class ProductRepository {
     this.#db = db;
   };
 
-  async count( where = {}, tx = this.#db ) {
-    return await tx.orm.public.Product.where( where ).aggregate( a => ( { total: a.count() } ) );
+  async count( where ) {
+    return await this.#db.orm.public.Product.where( where ).aggregate( a => ( { total: a.count() } ) );
   };
 
-  async create( data, tx = this.#db ) {
-    return await tx.orm.public.Product.create( data );
+  async create( data ) {
+    return await this.#db.orm.public.Product.create( data );
   };
 
-  async delete( where, tx = this.#db ) {
-    return await tx.orm.public.Product.where( where ).delete();
+  async delete( where ) {
+    return await this.#db.orm.public.Product.where( where ).delete();
   };
 
-  async find( { filter, sort, pagination } = {}, tx = this.#db ) {
-    return await tx.orm.public.Product.where( filter ).orderBy( p => p[sort.sort][sort.order]() ).limit( pagination.limit ).offset( pagination.skip ).all();
+  async find( { filter, sort, pagination } ) {
+    return await this.#db.orm.public.Product.where( filter ).orderBy( p => p[sort.sort][sort.order]() ).limit( pagination.limit ).offset( pagination.skip ).all();
   };
 
-  async findOne( where = {}, tx = this.#db ) {
-    return await tx.orm.public.Product.where( where ).first();
+  async findOne( where ) {
+    return await this.#db.orm.public.Product.where( where ).include( 'carton' ).first();
   };
 
-  async update( where, data, tx = this.#db ) {
-    return await tx.orm.public.Product.where( where ).update( data );
+  async update( where, data ) {
+    return await this.#db.orm.public.Product.where( where ).update( data );
   };
 
 }

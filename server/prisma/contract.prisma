@@ -44,12 +44,12 @@ type Dimensions {
   length Int
   width Int
   height Int
+  weight Int
 }
 
 model Carton {
   id Uuid @id @onCreate(uuid())
   units Int
-  weight Int
   dimensions Dimensions
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Uuid @unique
@@ -60,9 +60,8 @@ model Product {
   name String @unique
   slug String @unique
   sku String? @unique
-  weight Int?
   dimensions Dimensions?
-  сarton Carton?
+  carton Carton?
   createdAt DateTime @default(now())
   archived Boolean @default(false)
 }

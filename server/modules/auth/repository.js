@@ -6,16 +6,16 @@ export class AuthRepository {
     this.#db = db;
   };
 
-  async create( data, tx = this.#db ) {
-    return await tx.orm.public.Auth.create( data );
+  async create( data ) {
+    return await this.#db.orm.public.Auth.create( data );
   };
 
-  async findOne( where, tx = this.#db ) {
-    return await tx.orm.public.Auth.where( where ).first();
+  async findOne( where ) {
+    return await this.#db.orm.public.Auth.where( where ).first();
   };
 
-  async update( where, data, tx = this.#db ) {
-    return await tx.orm.public.Auth.where( where ).update( data );
+  async update( where, data ) {
+    return await this.#db.orm.public.Auth.where( where ).update( data );
   };
 
 }

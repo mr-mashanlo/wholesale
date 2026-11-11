@@ -3,17 +3,17 @@ import { z } from 'zod';
 const Dimensions = z.object( {
   length: z.number(),
   width: z.number(),
-  height: z.number()
+  height: z.number(),
+  weight: z.number()
 } );
 
 export const ProductSchema = z.object( {
   name: z.string().min( 3, 'Name must be ≥ 3 characters' ),
   sku: z.string().optional(),
-  weight: z.number().optional(),
   dimensions: Dimensions.optional()
 } );
 
-const FilteringSchema = ProductSchema.omit( { weight: true, dimensions: true } ).extend( {
+const FilteringSchema = ProductSchema.omit( { dimensions: true } ).extend( {
   id: z.string(),
   archived: z.xor( [ z.string(), z.boolean() ] ).transform( v => v === 'true' ? true : false )
 } ).partial();
